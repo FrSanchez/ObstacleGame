@@ -1,30 +1,78 @@
 package com.sanchezparralabs.obstacle.screen;
 
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.utils.Logger;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+import com.sanchezparralabs.obstacle.config.GameConfig;
+import com.sanchezparralabs.obstacle.entity.Player;
+import com.sanchezparralabs.obstacle.util.GdxUtils;
+import com.sanchezparralabs.obstacle.util.ViewportUtils;
 
 public class GameScreen implements Screen {
-    private SpriteBatch batch;
-    private Texture img;
+
+    private static final Logger log = new Logger(GameScreen.class.getName(), Logger.DEBUG);
+
+    private OrthographicCamera camera;
+    private Viewport viewport;
+    private ShapeRenderer renderer;
+
+    private Player player;
+
     @Override
     public void show() {
-        batch = new SpriteBatch();
-        img = new Texture("libgdx.png");
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT, camera);
+        renderer = new ShapeRenderer();
+
+        player = new Player();
+
+        // calculate position
+        float startPlayerX = GameConfig.WORLD_CENTER_X;
+        float startPlayerY = 1;
+
+        player.setPosition(startPlayerX, startPlayerY);
     }
 
     @Override
-    public void render(float v) {
-        ScreenUtils.clear(1, 0, 0, 1);
-        batch.begin();
-        batch.draw(img, 0, 0);
-        batch.end();
+    public void render(float delta) {
+        // update world'
+        update(delta);
+
+        GdxUtils.clearScreen();;
+        renderDebug();
+    }
+
+    private void update(float delta) {
+        updatePlayer(delta);
+    }
+
+    private void updatePlayer(float delta) {
+        log.debug("Player position = " + player.getX() + ", " + player.getY());
+        player.update();
+    }
+
+    private void renderDebug() {
+        renderer.setProjectionMatrix(camera.combined);
+        renderer.begin(ShapeRenderer.ShapeType.Line);
+
+        drawDebug();
+
+        renderer.end();
+        ViewportUtils.drawGrid(viewport, renderer);
+    }
+
+
+    private void drawDebug() {
+        player.drawDebug(renderer);
     }
 
     @Override
-    public void resize(int i, int i1) {
-
+    public void resize(int w, int h) {
+        viewport.update(w, h, true);
+        ViewportUtils.debugPixelPerUnit(viewport);
     }
 
     @Override
@@ -44,7 +92,6 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        batch.dispose();
-        img.dispose();
+        renderer.dispose();
     }
 }
