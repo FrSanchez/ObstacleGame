@@ -10,6 +10,7 @@ import com.sanchezparralabs.obstacle.config.GameConfig;
 import com.sanchezparralabs.obstacle.entity.Player;
 import com.sanchezparralabs.obstacle.util.GdxUtils;
 import com.sanchezparralabs.obstacle.util.ViewportUtils;
+import com.sanchezparralabs.obstacle.util.debug.DebugCameraController;
 
 public class GameScreen implements Screen {
 
@@ -20,6 +21,7 @@ public class GameScreen implements Screen {
     private ShapeRenderer renderer;
 
     private Player player;
+    private DebugCameraController debugCameraController;
 
     @Override
     public void show() {
@@ -34,11 +36,17 @@ public class GameScreen implements Screen {
         float startPlayerY = 1;
 
         player.setPosition(startPlayerX, startPlayerY);
+
+        debugCameraController = new DebugCameraController();
+        debugCameraController.setStartPosition(GameConfig.WORLD_CENTER_X, GameConfig.WORLD_CENTER_Y);
     }
 
     @Override
     public void render(float delta) {
-        // update world'
+        debugCameraController.handleDebugInput(delta);
+        debugCameraController.applyTo(camera);
+
+        // update world
         update(delta);
 
         GdxUtils.clearScreen();;
