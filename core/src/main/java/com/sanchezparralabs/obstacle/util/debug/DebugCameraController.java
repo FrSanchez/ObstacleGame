@@ -10,23 +10,6 @@ import com.badlogic.gdx.utils.Logger;
 
 public class DebugCameraController {
     private static final Logger log = new Logger(DebugCameraController.class.getName(), Logger.DEBUG);
-    // constants
-    private static final int DEFAULT_LEFT_KEY = Input.Keys.A;
-    private static final int DEFAULT_RIGHT_KEY = Input.Keys.D;
-    private static final int DEFAULT_UP_KEY = Input.Keys.W;
-    private static final int DEFAULT_DOWN_KEY = Input.Keys.S;
-
-    private static final int DEFAULT_ZOOM_IN_KEY = Input.Keys.COMMA;
-    private static final int DEFAULT_ZOOM_OUT_KEY = Input.Keys.PERIOD;
-
-    private static final int DEFAULT_RESET_KEY = Input.Keys.BACKSPACE;
-    private static final int DEFAULT_LOG_KEY = Input.Keys.ENTER;
-
-    private static final float DEFAULT_ZOOM_SPEED = 2.0f; // units per second
-    private static final float DEFAULT_MAX_ZOOM_IN = 0.20f;
-    private static final float DEFAULT_MAX_ZOOM_OUT = 30f;
-
-    private static final float DEFAULT_MOVE_SPEED = 20.0f; // units per second
 
     private final Vector2 position = new Vector2();
     private final Vector2 startPosition = new Vector2();
