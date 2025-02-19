@@ -3,10 +3,13 @@ package com.sanchezparralabs.obstacle.screen;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Logger;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.sanchezparralabs.obstacle.config.GameConfig;
+import com.sanchezparralabs.obstacle.entity.Obstacle;
 import com.sanchezparralabs.obstacle.entity.Player;
 import com.sanchezparralabs.obstacle.util.GdxUtils;
 import com.sanchezparralabs.obstacle.util.ViewportUtils;
@@ -21,7 +24,11 @@ public class GameScreen implements Screen {
     private ShapeRenderer renderer;
 
     private Player player;
+    private Array<Obstacle> obstacles = new Array<>();
+    private float obstacleTime;
     private DebugCameraController debugCameraController;
+
+    private boolean alive = true;
 
     @Override
     public void show() {
@@ -47,7 +54,9 @@ public class GameScreen implements Screen {
         debugCameraController.applyTo(camera);
 
         // update world
-        update(delta);
+        if (alive) {
+            update(delta);
+        }
 
         GdxUtils.clearScreen();;
         renderDebug();
@@ -55,11 +64,52 @@ public class GameScreen implements Screen {
 
     private void update(float delta) {
         updatePlayer(delta);
+        updateObstacles(delta);
+        if (isPlayerCollidingWithObstacle()) {
+            alive = false;
+        }
+    }
+
+    private boolean isPlayerCollidingWithObstacle() {
+        for (Obstacle obstacle : obstacles) {
+            if (obstacle.isPlayerColliding(player)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void updateObstacles(float delta) {
+        for (Obstacle obstacle : obstacles) {
+            obstacle.update();
+        }
+
+        createNewObstacle(delta);
+    }
+
+    private void createNewObstacle(float delta) {
+        obstacleTime += delta;
+
+        if (obstacleTime > GameConfig.OBSTACLE_SPAWN_TIME) {
+            Obstacle obstacle = new Obstacle();
+            float obstacleX = MathUtils.random(0, GameConfig.WORLD_WIDTH - obstacle.getWidth());
+            float obstacleY = GameConfig.WORLD_HEIGHT;
+            obstacle.setPosition(obstacleX, obstacleY);
+            obstacles.add(obstacle);
+            obstacleTime = 0;
+        }
     }
 
     private void updatePlayer(float delta) {
-        log.debug("Player position = " + player.getX() + ", " + player.getY());
         player.update();
+        blockPlayerFromLeavingTheWorld();
+    }
+
+    private void blockPlayerFromLeavingTheWorld() {
+        float playerX = MathUtils.clamp(player.getX(), player.getWidth() / 2, GameConfig.WORLD_WIDTH - player.getWidth() / 2);
+
+        player.setPosition(playerX, player.getY());
     }
 
     private void renderDebug() {
@@ -75,6 +125,9 @@ public class GameScreen implements Screen {
 
     private void drawDebug() {
         player.drawDebug(renderer);
+        for(Obstacle obstacle : obstacles) {
+            obstacle.drawDebug(renderer);
+        }
     }
 
     @Override
