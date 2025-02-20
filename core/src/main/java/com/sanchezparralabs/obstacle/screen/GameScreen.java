@@ -1,13 +1,18 @@
 package com.sanchezparralabs.obstacle.screen;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Logger;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.sanchezparralabs.obstacle.assets.AssetPaths;
 import com.sanchezparralabs.obstacle.config.GameConfig;
 import com.sanchezparralabs.obstacle.entity.Obstacle;
 import com.sanchezparralabs.obstacle.entity.Player;
@@ -20,21 +25,36 @@ public class GameScreen implements Screen {
     private static final Logger log = new Logger(GameScreen.class.getName(), Logger.DEBUG);
 
     private OrthographicCamera camera;
+    private OrthographicCamera hudCamera;
+    private Viewport hudViewport;
+
+    private SpriteBatch batch;
+    private BitmapFont font;
+    private final GlyphLayout layout = new GlyphLayout();
+
     private Viewport viewport;
     private ShapeRenderer renderer;
 
     private Player player;
-    private Array<Obstacle> obstacles = new Array<>();
+    private final Array<Obstacle> obstacles = new Array<>();
     private float obstacleTime;
-    private DebugCameraController debugCameraController;
+    private float scoreTimer;
 
-    private boolean alive = true;
+    private int score = 0;
+    private int lives = GameConfig.LIVES_START;
+
+    private DebugCameraController debugCameraController;
 
     @Override
     public void show() {
         camera = new OrthographicCamera();
         viewport = new FitViewport(GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT, camera);
         renderer = new ShapeRenderer();
+
+        hudCamera = new OrthographicCamera();
+        hudViewport = new FitViewport(GameConfig.HUD_WIDTH, GameConfig.HUD_HEIGHT, hudCamera);
+        batch = new SpriteBatch();
+        font = new BitmapFont(Gdx.files.internal(AssetPaths.UI_FONT));
 
         player = new Player();
 
@@ -54,19 +74,33 @@ public class GameScreen implements Screen {
         debugCameraController.applyTo(camera);
 
         // update world
-        if (alive) {
-            update(delta);
-        }
+        update(delta);
 
         GdxUtils.clearScreen();;
+
+        //render ui/hud
+        renderUI();
+
+        // render debug graphics
         renderDebug();
     }
 
     private void update(float delta) {
         updatePlayer(delta);
         updateObstacles(delta);
+        updateScore(delta);
         if (isPlayerCollidingWithObstacle()) {
-            alive = false;
+            log.debug("Collision detected");
+            lives--;
+        }
+    }
+
+    private void updateScore(float delta) {
+        scoreTimer += delta;
+
+        if (scoreTimer >= GameConfig.SCORE_MAX_TIME) {
+            scoreTimer = 0.0f;
+            score += MathUtils.random(1, 5);
         }
     }
 
@@ -112,6 +146,22 @@ public class GameScreen implements Screen {
         player.setPosition(playerX, player.getY());
     }
 
+    private void renderUI() {
+        batch.setProjectionMatrix(hudCamera.combined);
+        batch.begin();
+
+        String livesText = "LIVES: " + lives;
+        String scoreText = "SCORE: " + score;
+
+        layout.setText(font, livesText);
+        font.draw(batch, livesText, 20, GameConfig.HUD_HEIGHT - layout.height);
+
+        layout.setText(font, scoreText);
+        font.draw(batch, scoreText, GameConfig.HUD_WIDTH - layout.width - 20, GameConfig.HUD_HEIGHT - layout.height);
+
+        batch.end();
+    }
+
     private void renderDebug() {
         renderer.setProjectionMatrix(camera.combined);
         renderer.begin(ShapeRenderer.ShapeType.Line);
@@ -131,8 +181,9 @@ public class GameScreen implements Screen {
     }
 
     @Override
-    public void resize(int w, int h) {
-        viewport.update(w, h, true);
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        hudViewport.update(width, height, true);
         ViewportUtils.debugPixelPerUnit(viewport);
     }
 
@@ -154,5 +205,7 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
         renderer.dispose();
+        batch.dispose();
+        font.dispose();
     }
 }
